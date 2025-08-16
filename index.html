@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Stereo Left/Right Sound Tester</title>
+  <style>
+    :root {
+      --bg: #0f172a; /* slate-900 */
+      --panel: #111827; /* gray-900 */
+      --text: #e5e7eb; /* gray-200 */
+      --muted: #9ca3af; /* gray-400 */
+      --accent: #22d3ee; /* cyan-400 */
+      --accent2: #a78bfa; /* violet-400 */
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Noto Sans, Ubuntu, Cantarell, Helvetica Neue, Arial, "Apple Color Emoji", "Segoe UI Emoji";
+      background: radial-gradient(1200px 600px at 20% -20%, rgba(34,211,238,.15), transparent),
+                  radial-gradient(900px 400px at 120% 10%, rgba(167,139,250,.15), transparent),
+                  var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: grid;
+      place-items: center;
+      padding: 24px;
+    }
+    .card {
+      width: 100%;
+      max-width: 900px;
+      background: linear-gradient(180deg, rgba(255,255,255,0.04), rgba(255,255,255,0.02));
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 20px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+      padding: 24px;
+      backdrop-filter: blur(6px);
+    }
+    h1 { margin: 0 0 8px; font-size: 28px; letter-spacing: .2px; }
+    p { margin: 4px 0 18px; color: var(--muted); }
+    .grid { display: grid; gap: 16px; grid-template-columns: repeat(12, 1fr); }
+    .row { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 12px; align-items: center; }
+    .panel {
+      grid-column: span 12;
+      background: var(--panel);
+      border: 1px solid rgba(255,255,255,0.06);
+      border-radius: 16px;
+      padding: 16px;
+    }
+    @media (min-width: 700px){
+      .panel.half { grid-column: span 6; }
+    }
+    .btn {
+      appearance: none; border: none; cursor: pointer;
+      padding: 10px 14px; border-radius: 14px; font-weight: 600; letter-spacing:.2px;
+      background: linear-gradient(180deg, rgba(34,211,238,.25), rgba(34,211,238,.15));
+      color: white; border: 1px solid rgba(34,211,238,.5);
+      transition: transform .06s ease, box-shadow .2s ease, background .2s ease;
+      box-shadow: 0 6px 16px rgba(34,211,238,.15);
+    }
+    .btn:hover { transform: translateY(-1px); }
+    .btn.secondary {
+      background: linear-gradient(180deg, rgba(167,139,250,.25), rgba(167,139,250,.15));
+      border-color: rgba(167,139,250,.5); box-shadow: 0 6px 16px rgba(167,139,250,.15);
+    }
+    .btn.stop {
+      background: linear-gradient(180deg, rgba(248,113,113,.25), rgba(248,113,113,.15));
+      border-color: rgba(248,113,113,.5); box-shadow: 0 6px 16px rgba(248,113,113,.15);
+    }
+    .field { display: grid; gap: 6px; min-width: 140px; }
+    .label { font-size: 12px; color: var(--muted); }
+    input[type="range"] { width: 220px; }
+    input, select { 
+      background: #0b1020; color: var(--text);
+      border: 1px solid rgba(255,255,255,0.08); border-radius: 10px;
+      padding: 8px 10px; outline: none;
+    }
+    .badges { display: flex; gap: 8px; flex-wrap: wrap; }
+    .badge { font-size: 12px; padding: 6px 10px; border-radius: 999px; background: rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.08); }
+    .status { font-variant-numeric: tabular-nums; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>Stereo Left/Right Sound Tester</h1>
+    <p>Quickly check if your headphones/speakers play <strong>left</strong> and <strong>right</strong> channels correctly. Works locally in your browser via the Web Audio API.</p>
+
+    <div class="grid">
+      <div class="panel">
+        <div class="row">
+          <button class="btn" id="leftBtn">Play LEFT</button>
+          <button class="btn" id="rightBtn">Play RIGHT</button>
+          <button class="btn secondary" id="alternateBtn">Alternate L↔R</button>
+          <button class="btn secondary" id="sweepBtn">Sweep L→R→L</button>
+          <button class="btn" id="beepBtn">Beep L then R</button>
+          <button class="btn stop" id="stopBtn">Stop</button>
+        </div>
+      </div>
+
+      <div class="panel half">
+        <div class="row">
+          <div class="field">
+            <label class="label" for="freq">Tone frequency (Hz)</label>
+            <input id="freq" type="number" value="440" min="50" max="4000" step="1">
+          </div>
+          <div class="field">
+            <label class="label" for="wave">Waveform</label>
+            <select id="wave">
+              <option value="sine">Sine</option>
+              <option value="square">Square</option>
+              <option value="sawtooth">Sawtooth</option>
+              <option value="triangle">Triangle</option>
+            </select>
+          </div>
+          <div class="field">
+            <label class="label" for="altMs">Alternate interval (ms)</label>
+            <input id="altMs" type="number" value="800" min="100" max="5000" step="50">
+          </div>
+        </div>
+      </div>
+
+      <div class="panel half">
+        <div class="row">
+          <div class="field">
+            <label class="label" for="volume">Volume</label>
+            <input id="volume" type="range" min="0" max="100" value="30">
+          </div>
+          <div class="badges">
+            <span class="badge">Tip: Start low volume</span>
+            <span class="badge">Shortcut: L / R keys</span>
+            <span class="badge">Stop: Space</span>
+          </div>
+          <div class="status" id="status">Status: idle</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let audioCtx = null;
+    let gainNode = null;
+    let panner = null;
+    let osc = null;
+    let altTimer = null;
+    let sweepTimer = null;
+
+    const qs = id => document.getElementById(id);
+    const freqEl = qs('freq');
+    const waveEl = qs('wave');
+    const altMsEl = qs('altMs');
+    const volumeEl = qs('volume');
+    const statusEl = qs('status');
+
+    function setStatus(text){ statusEl.textContent = 'Status: ' + text; }
+
+    function ensureAudio(){
+      if (!audioCtx) {
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      }
+      if (!gainNode) {
+        gainNode = audioCtx.createGain();
+        setVolumeFromSlider();
+      }
+      if (!panner) {
+        panner = new StereoPannerNode(audioCtx, { pan: 0 });
+      }
+      // Wire up graph (osc -> gain -> panner -> destination)
+      gainNode.disconnect();
+      panner.disconnect();
+      gainNode.connect(panner);
+      panner.connect(audioCtx.destination);
+    }
+
+    function setVolumeFromSlider(){
+      const v = Number(volumeEl.value) / 100; // 0..1
+      if (gainNode) gainNode.gain.setTargetAtTime(v, audioCtx?.currentTime || 0, 0.01);
+    }
+
+    volumeEl.addEventListener('input', setVolumeFromSlider);
+
+    function stopAll(){
+      if (altTimer) { clearInterval(altTimer); altTimer = null; }
+      if (sweepTimer) { clearInterval(sweepTimer); sweepTimer = null; }
+      if (osc) {
+        try { osc.stop(); } catch {}
+        try { osc.disconnect(); } catch {}
+        osc = null;
+      }
+      setStatus('idle');
+    }
+
+    function startTone(panValue){
+      stopAll();
+      ensureAudio();
+      panner.pan.setValueAtTime(panValue, audioCtx.currentTime);
+      osc = audioCtx.createOscillator();
+      osc.type = waveEl.value;
+      osc.frequency.setValueAtTime(Math.max(50, Math.min(4000, Number(freqEl.value) || 440)), audioCtx.currentTime);
+      osc.connect(gainNode);
+      osc.start();
+    }
+
+    // Actions
+    function playLeft(){ startTone(-1); setStatus('playing LEFT'); }
+    function playRight(){ startTone(1); setStatus('playing RIGHT'); }
+
+    function playAlternate(){
+      stopAll();
+      ensureAudio();
+      startTone(-1);
+      const interval = Math.max(100, Math.min(5000, Number(altMsEl.value) || 800));
+      altTimer = setInterval(() => {
+        const next = panner.pan.value > 0 ? -1 : 1;
+        panner.pan.setValueAtTime(next, audioCtx.currentTime);
+        setStatus('alternating ' + (next < 0 ? 'LEFT' : 'RIGHT'));
+      }, interval);
+    }
+
+    function playSweep(){
+      stopAll();
+      ensureAudio();
+      startTone(-1);
+      // Smooth pan back and forth by updating ~60fps
+      let dir = 1; // towards right
+      sweepTimer = setInterval(() => {
+        const step = 0.04 * dir; // pan speed
+        let next = panner.pan.value + step;
+        if (next >= 1) { next = 1; dir = -1; }
+        if (next <= -1) { next = -1; dir = 1; }
+        panner.pan.setValueAtTime(next, audioCtx.currentTime);
+        setStatus('sweeping ' + (next < 0 ? 'LEFT' : (next > 0 ? 'RIGHT' : 'CENTER')));
+      }, 16);
+    }
+
+    function beepLR(){
+      stopAll();
+      ensureAudio();
+
+      // helper to play a short beep on a side
+      const playBeep = (pan, ms) => new Promise(resolve => {
+        const bOsc = audioCtx.createOscillator();
+        bOsc.type = 'sine';
+        bOsc.frequency.setValueAtTime(880, audioCtx.currentTime);
+        panner.pan.setValueAtTime(pan, audioCtx.currentTime);
+        bOsc.connect(gainNode);
+        bOsc.start();
+        setTimeout(() => { try { bOsc.stop(); } catch {}; resolve(); }, ms);
+      });
+
+      (async () => {
+        setStatus('beep LEFT');
+        await playBeep(-1, 350);
+        setStatus('beep RIGHT');
+        await new Promise(r => setTimeout(r, 150));
+        await playBeep(1, 350);
+        setStatus('idle');
+      })();
+    }
+
+    // Wire buttons
+    qs('leftBtn').addEventListener('click', playLeft);
+    qs('rightBtn').addEventListener('click', playRight);
+    qs('alternateBtn').addEventListener('click', playAlternate);
+    qs('sweepBtn').addEventListener('click', playSweep);
+    qs('beepBtn').addEventListener('click', beepLR);
+    qs('stopBtn').addEventListener('click', stopAll);
+
+    // Keyboard shortcuts: L, R, Space
+    window.addEventListener('keydown', (e) => {
+      if (e.code === 'KeyL') playLeft();
+      if (e.code === 'KeyR') playRight();
+      if (e.code === 'Space') { e.preventDefault(); stopAll(); }
+    });
+
+    // Autoresume context on first user gesture (required by browsers)
+    ['click','keydown','touchstart'].forEach(evt => {
+      window.addEventListener(evt, () => {
+        if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
+      }, { once: true });
+    });
+  </script>
+</body>
+</html>
